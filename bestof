@@ -1,0 +1,39 @@
+#!/bin/bash
+
+dir="${HOME}/Images/bestof/"
+
+if [ $1 ]
+then
+    if [ $1 = "-h" -o $1 = "--help" ]
+    then
+	echo "To use the bestof script, you need pictures in ~/Images/bestof/ and have to call them \"bestofbjr1.jpg|png\", \"bestofbjr2.jpg|png\", ..."
+	exit 0
+    fi
+fi
+
+if [ ! -d "$dir" ]
+then
+    echo "Directory ${dir} does not exist, sorry <3"
+    exit 1
+fi
+
+something=`ls -l ${dir}/ | wc -l`
+something=$((something - 1))
+
+x=$(($RANDOM % $something + 1))
+
+dafuckls=`ls ${dir}/`
+
+filename="${dir}/`echo ${dafuckls} | cut -d ' ' -f ${x}`"
+
+if [ `echo ${filename} | grep ".[jpg|png]" | wc -c` -lt 3 ]
+then
+    echo "Well I bloody don't know how you did this, please tell Romain about this ! <3"
+    exit 1
+fi
+
+gsettings set org.gnome.desktop.background picture-options "scaled"
+gsettings set org.gnome.desktop.background primary-color "#424242"
+gsettings set org.gnome.desktop.background picture-uri "file://$filename"
+
+notify-send "La Madame d'aujourd'hui n'etait pas terrible j'imagine :'("

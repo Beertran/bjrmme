@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+
+spinner() {
+    local i sp n
+    sp='/-\|'
+    n=${#sp}
+    while sleep 0.1; do
+        printf "%s\b" "${sp:i++%n:1}"
+    done
+}
+
+if [ "`echo $DESKTOP_SESSION`" = "icewm" ]
+then
+    echo "This script only works on xfce for now, sorry"
+    exit
+fi
+
+spinner & # starting spinner
+
+folder="${HOME}/Images"
+mkdir -p "${folder}"
+filename="${folder}/mme_$(date +%F)"
+
+if [ $# -ge 1 ]
+then
+    folder="${folder}/AuRevoir"
+    mkdir -p "${folder}"
+    filename="${folder}/bye_mme_$(date +%F)"
+fi
+
+log="${folder}/lastlog"
+rm -f "$log"
+echo "filename=$filename" >> $log
+hello="madame"
+tagend=""
+
+if [ $# -ge 1 ]
+then
+    PAGE="`curl --silent www.aurevoirmadame.fr/`"
+else
+    if [ `date | grep dimanche | wc -l` -eq 1 ]
+    then
+	PAGE="`curl -L --silent dites.bonjourmadame.fr/random`"
+    elif [ `date | grep sunday | wc -l` -eq 1 ]
+    then
+    	PAGE="`curl -L --silent dites.bonjourmadame.fr/random`"
+    elif [ `date | grep samedi | wc -l` -eq 1 ]
+    then
+	PAGE="`curl -L --silent dites.bonjourmadame.fr/random`"
+    elif [ `date | grep saturday | wc -l` -eq 1 ]
+    then
+	PAGE="`curl -L --silent dites.bonjourmadame.fr/random`"
+    elif [ `date | grep Sat | wc -l` -eq 1 ]
+    then
+	PAGE="`curl -L --silent dites.bonjourmadame.fr/random`"
+    elif [ `date | grep Sun | wc -l` -eq 1 ]
+    then
+	PAGE="`curl -L --silent dites.bonjourmadame.fr/random`"
+    else
+	PAGE="`curl --silent dites.bonjourmadame.fr/`"
+    fi
+fi
+
+echo >> $log
+echo "PAGE=$PAGE" >> $log
+
+if [ `echo "$PAGE" | wc -l` -lt 5 ]
+then
+    echo "Can't connect to beautiful ${hello}s (no internet connectivity)"
+    echo "Can't connect to beautiful ${hello}s (no internet connectivity)" >> $log
+    kill "$!"
+    exit
+fi
+
+imgUrl=`echo "$PAGE" | grep -o -P "src=\"http://[0-9][0-9].media.tumblr.com/.*/tumblr_.*.[jpg|png]${tagend}" | cut -d \" -f2`
+# extracting url
+echo >> $log
+echo `echo "$PAGE" | grep -o -P "src=\"http://[0-9][0-9].media.tumblr.com/.*/tumblr_.*.[jpg|png]${tagend}"` >> $log
+echo "imgUrl=$imgUrl" >> $log
+while [ `echo $imgUrl | grep " " | wc -c` -gt 5 ]
+do
+    imgUrl=`echo $imgUrl | cut -d " " -f1`
+    echo "changed to imgUrl=$imgUrl" >> $log
+done
+ext=`echo "$imgUrl" | cut -d "." -f5 | cut -d "3" -f1`
+echo >> $log
+echo "ext=$ext" >> $log
+filename=`echo ${filename}.${ext} | cut -d "?" -f1`
+echo >> $log
+echo "filename=$filename" >> $log
+
+if [ `echo "$imgUrl" | wc -c` -lt 5 ]
+then
+    echo "ERROR: Can't find ${hello}s anymore, please contact Romain right now"
+    echo >> $log
+    echo "ERROR: Can't find ${hello}s anymore, please contact Romain right now" >> $log
+    kill "$!"
+    exit
+fi
+
+res="`curl --silent -o $filename $imgUrl`"
+
+gsettings set org.gnome.desktop.background picture-options "scaled"
+gsettings set org.gnome.desktop.background primary-color "#424242"
+gsettings set org.gnome.desktop.background picture-uri "file://$filename"
+
+notify-send "Une nouvelle ${hello} vient de surgir sur votre écran <3 <3 <3"
+
+echo "Merci d'avoir utilisé bjrmme, à demain <3"
+
+kill "$!" # kill spinner
